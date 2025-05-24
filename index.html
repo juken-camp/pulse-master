@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>PULSE MASTER - Perfect Timing Challenge</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(45deg, #0f0f23, #1a1a3a, #2d1b69);
+            background-size: 400% 400%;
+            animation: gradientShift 8s ease infinite;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .game-container {
+            width: min(90vw, 90vh);
+            height: min(90vw, 90vh);
+            position: relative;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.3) 100%);
+            box-shadow: 0 0 50px rgba(0,255,255,0.3), inset 0 0 50px rgba(255,255,255,0.1);
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .center-core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #fff, #00ffff);
+            box-shadow: 0 0 20px #00ffff;
+            animation: pulse 2s ease-in-out infinite;
+            z-index: 50;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+
+        .wave {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 3px solid;
+            animation: expandWave linear;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .perfect-zone {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            height: 85%;
+            border-radius: 50%;
+            border: 4px solid #00ff00;
+            box-shadow: 0 0 20px #00ff00, inset 0 0 20px rgba(0,255,0,0.2);
+            animation: zoneGlow 1s ease-in-out infinite alternate;
+            z-index: 20;
+        }
+
+        @keyframes zoneGlow {
+            0% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes expandWave {
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+            100% {
+                width: 100%;
+                height: 100%;
+                opacity: 0;
+            }
+        }
+
+        .ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-size: clamp(14px, 3.5vw, 20px);
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .level {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #fff;
+            font-size: clamp(14px, 3.5vw, 20px);
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .lives {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: #fff;
+            font-size: clamp(14px, 3.5vw, 20px);
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .combo {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffff00;
+            font-size: clamp(20px, 5vw, 36px);
+            font-weight: bold;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .perfect-effect {
+            position: absolute;
+            top: 70%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00ff00;
+            font-size: clamp(18px, 4vw, 28px);
+            font-weight: bold;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1001;
+        }
+
+        .start-screen, .game-over-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            text-align: center;
+            z-index: 2000;
+            pointer-events: all;
+        }
+
+        .title {
+            font-size: clamp(24px, 8vw, 48px);
+            font-weight: bold;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titleGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            0% { filter: drop-shadow(0 0 10px #00ffff); }
+            100% { filter: drop-shadow(0 0 20px #ff00ff); }
+        }
+
+        .subtitle {
+            font-size: clamp(12px, 3vw, 18px);
+            margin-bottom: 30px;
+            color: #aaa;
+        }
+
+        .start-button {
+            padding: 15px 30px;
+            font-size: clamp(16px, 4vw, 24px);
+            background: linear-gradient(45deg, #00ffff, #0080ff);
+            border: none;
+            border-radius: 25px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0,255,255,0.5);
+            pointer-events: all;
+            touch-action: manipulation;
+        }
+
+        .start-button:hover, .start-button:active {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0,255,255,0.8);
+        }
+
+        .instructions {
+            margin-top: 20px;
+            font-size: clamp(10px, 2.5vw, 14px);
+            color: #ccc;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                width: 95vw;
+                height: 95vw;
+            }
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleFloat 2s ease-out forwards;
+            z-index: 100;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0) translateY(-100px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container" id="gameContainer">
+        <div class="center-core"></div>
+        <div class="perfect-zone"></div>
+    </div>
+
+    <div class="ui-overlay">
+        <div class="score">スコア: <span id="scoreValue">0</span></div>
+        <div class="level">レベル: <span id="levelValue">1</span></div>
+        <div class="lives">ライフ: <span id="livesValue">5</span></div>
+        <div class="combo" id="comboDisplay"></div>
+        <div class="perfect-effect" id="perfectEffect"></div>
+    </div>
+
+    <div class="start-screen" id="startScreen">
+        <div class="title">PULSE MASTER</div>
+        <div class="subtitle">Perfect Timing Challenge</div>
+        <button class="start-button" id="startButton">ゲームスタート</button>
+        <div class="instructions">
+            波が緑の円に重なる瞬間をタップ！<br>
+            完璧なタイミングで高得点を狙おう！<br>
+            連続成功でコンボボーナス！<br>
+            ライフが0になるとゲームオーバー！
+        </div>
+    </div>
+
+    <div class="game-over-screen" id="gameOverScreen" style="display: none;">
+        <div class="title">GAME OVER</div>
+        <div class="subtitle">お疲れ様でした！</div>
+        <div style="margin: 20px 0; font-size: clamp(16px, 4vw, 24px);">
+            最終スコア: <span id="finalScore">0</span><br>
+            到達レベル: <span id="finalLevel">1</span><br>
+            最大コンボ: <span id="maxCombo">0</span>
+        </div>
+        <button class="start-button" id="restartButton">もう一度プレイ</button>
+    </div>
+
+    <script>
+        class PulseMaster {
+            constructor() {
+                this.gameContainer = document.getElementById('gameContainer');
+                this.scoreElement = document.getElementById('scoreValue');
+                this.levelElement = document.getElementById('levelValue');
+                this.livesElement = document.getElementById('livesValue');
+                this.comboDisplay = document.getElementById('comboDisplay');
+                this.perfectEffect = document.getElementById('perfectEffect');
+                
+                this.score = 0;
+                this.level = 1;
+                this.lives = 5;
+                this.combo = 0;
+                this.maxCombo = 0;
+                this.isGameRunning = false;
+                this.waves = [];
+                this.waveSpeed = 3500; // 初期速度をより適切に
+                this.waveInterval = 2200; // 間隔も調整
+                this.gameLoopId = null;
+                this.waveIntervalId = null;
+                
+                this.colors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff8000'];
+                this.currentColorIndex = 0;
+                
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                document.getElementById('startButton').addEventListener('click', () => {
+                    this.startGame();
+                });
+                
+                document.getElementById('startButton').addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.startGame();
+                });
+
+                document.getElementById('restartButton').addEventListener('click', () => {
+                    this.restartGame();
+                });
+                
+                document.getElementById('restartButton').addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.restartGame();
+                });
+
+                this.gameContainer.addEventListener('click', (e) => {
+                    if (this.isGameRunning) {
+                        this.handleTap(e);
+                    }
+                });
+                
+                this.gameContainer.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    if (this.isGameRunning) {
+                        this.handleTap(e);
+                    }
+                });
+            }
+
+            startGame() {
+                document.getElementById('startScreen').style.display = 'none';
+                document.getElementById('gameOverScreen').style.display = 'none';
+                
+                this.score = 0;
+                this.level = 1;
+                this.lives = 5;
+                this.combo = 0;
+                this.maxCombo = 0;
+                this.isGameRunning = true;
+                this.waveSpeed = 3500;
+                this.waveInterval = 2200;
+                this.waves = [];
+                
+                this.updateDisplay();
+                this.startWaveGeneration();
+            }
+
+            startWaveGeneration() {
+                this.createWave();
+                this.waveIntervalId = setInterval(() => {
+                    if (this.isGameRunning) {
+                        this.createWave();
+                    }
+                }, this.waveInterval);
+            }
+
+            createWave() {
+                const wave = document.createElement('div');
+                wave.className = 'wave';
+                wave.style.borderColor = this.colors[this.currentColorIndex];
+                wave.style.boxShadow = `0 0 15px ${this.colors[this.currentColorIndex]}`;
+                wave.style.animationDuration = `${this.waveSpeed}ms`;
+                
+                this.currentColorIndex = (this.currentColorIndex + 1) % this.colors.length;
+                
+                const waveData = {
+                    element: wave,
+                    startTime: Date.now(),
+                    duration: this.waveSpeed,
+                    caught: false
+                };
+                
+                this.waves.push(waveData);
+                this.gameContainer.appendChild(wave);
+                
+                setTimeout(() => {
+                    if (!waveData.caught && this.isGameRunning) {
+                        this.missWave();
+                    }
+                    if (wave.parentNode) {
+                        wave.parentNode.removeChild(wave);
+                    }
+                    this.waves = this.waves.filter(w => w !== waveData);
+                }, this.waveSpeed + 100);
+            }
+
+            handleTap(e) {
+                if (!this.isGameRunning) return;
+                
+                const currentTime = Date.now();
+                let bestWave = null;
+                let bestTiming = Infinity;
+                
+                this.waves.forEach(wave => {
+                    if (wave.caught) return;
+                    
+                    const elapsed = currentTime - wave.startTime;
+                    const progress = elapsed / wave.duration;
+                    const perfectZone = 0.85;
+                    const timing = Math.abs(progress - perfectZone);
+                    
+                    // より厳しい判定範囲（80%-90%のみ）
+                    if (timing < bestTiming && progress > 0.80 && progress < 0.90) {
+                        bestTiming = timing;
+                        bestWave = wave;
+                    }
+                });
+                
+                if (bestWave) {
+                    this.catchWave(bestWave, bestTiming);
+                    this.createParticleEffect(e);
+                } else {
+                    // タップミスでライフ減少
+                    this.lives--;
+                    this.combo = 0;
+                    this.showPerfectEffect('MISS!');
+                    
+                    if (this.lives <= 0) {
+                        this.gameOver();
+                    }
+                    this.updateDisplay();
+                }
+            }
+
+            catchWave(wave, timing) {
+                wave.caught = true;
+                wave.element.style.display = 'none';
+                
+                let points = 50; // 基本点数を下げる
+                let message = 'GOOD!';
+                
+                if (timing < 0.02) { // より厳しい判定
+                    points = 200;
+                    message = 'PERFECT!';
+                    this.combo++;
+                } else if (timing < 0.04) {
+                    points = 150;
+                    message = 'GREAT!';
+                    this.combo++;
+                } else if (timing < 0.06) {
+                    points = 100;
+                    message = 'NICE!';
+                    this.combo++;
+                } else {
+                    points = 50;
+                    message = 'GOOD!';
+                    this.combo = Math.max(0, this.combo - 1);
+                }
+                
+                // コンボボーナスを控えめに
+                if (this.combo > 1) {
+                    points *= (1 + this.combo * 0.1);
+                    this.showComboEffect();
+                }
+                
+                this.score += Math.floor(points);
+                this.maxCombo = Math.max(this.maxCombo, this.combo);
+                
+                // レベルアップ条件を厳しく（1000点ごと）
+                const newLevel = Math.floor(this.score / 1000) + 1;
+                if (newLevel > this.level) {
+                    this.level = newLevel;
+                    this.levelUp();
+                }
+                
+                this.updateDisplay();
+                this.showPerfectEffect(message);
+                this.playSuccessSound();
+            }
+
+            missWave() {
+                this.combo = 0;
+                this.lives--;
+                
+                if (this.lives <= 0) {
+                    this.gameOver();
+                } else {
+                    this.showPerfectEffect('MISS!');
+                }
+                
+                this.updateDisplay();
+            }
+
+            levelUp() {
+                // より急激な難易度上昇
+                this.waveSpeed = Math.max(1200, this.waveSpeed - 120);
+                this.waveInterval = Math.max(800, this.waveInterval - 80);
+                
+                clearInterval(this.waveIntervalId);
+                this.startWaveGeneration();
+                
+                this.showPerfectEffect(`LEVEL UP! ${this.level}`);
+                
+                // レベル5以上で特別な挑戦
+                if (this.level >= 5) {
+                    this.lives = Math.min(5, this.lives + 1); // ボーナスライフ
+                }
+            }
+
+            showPerfectEffect(text) {
+                this.perfectEffect.textContent = text;
+                this.perfectEffect.style.opacity = '1';
+                this.perfectEffect.style.transform = 'translate(-50%, -50%) scale(1.2)';
+                
+                setTimeout(() => {
+                    this.perfectEffect.style.opacity = '0';
+                    this.perfectEffect.style.transform = 'translate(-50%, -50%) scale(1)';
+                }, 1000);
+            }
+
+            showComboEffect() {
+                this.comboDisplay.textContent = `COMBO x${this.combo}!`;
+                this.comboDisplay.style.opacity = '1';
+                this.comboDisplay.style.transform = 'translate(-50%, -50%) scale(1.1)';
+                
+                setTimeout(() => {
+                    this.comboDisplay.style.opacity = '0';
+                    this.comboDisplay.style.transform = 'translate(-50%, -50%) scale(1)';
+                }, 1200);
+            }
+
+            createParticleEffect(e) {
+                const rect = this.gameContainer.getBoundingClientRect();
+                const x = (e.clientX || (e.changedTouches && e.changedTouches[0].clientX)) - rect.left;
+                const y = (e.clientY || (e.changedTouches && e.changedTouches[0].clientY)) - rect.top;
+                
+                for (let i = 0; i < 8; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = x + 'px';
+                    particle.style.top = y + 'px';
+                    particle.style.width = '6px';
+                    particle.style.height = '6px';
+                    particle.style.background = this.colors[Math.floor(Math.random() * this.colors.length)];
+                    particle.style.animationDelay = Math.random() * 0.2 + 's';
+                    
+                    this.gameContainer.appendChild(particle);
+                    
+                    setTimeout(() => {
+                        if (particle.parentNode) {
+                            particle.parentNode.removeChild(particle);
+                        }
+                    }, 2000);
+                }
+            }
+
+            playSuccessSound() {
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+                    
+                    gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.1);
+                } catch (e) {
+                    // 音声再生エラーは無視
+                }
+            }
+
+            updateDisplay() {
+                this.scoreElement.textContent = this.score.toLocaleString();
+                this.levelElement.textContent = this.level;
+                this.livesElement.textContent = this.lives;
+            }
+
+            gameOver() {
+                this.isGameRunning = false;
+                clearInterval(this.waveIntervalId);
+                
+                document.getElementById('finalScore').textContent = this.score.toLocaleString();
+                document.getElementById('finalLevel').textContent = this.level;
+                document.getElementById('maxCombo').textContent = this.maxCombo;
+                
+                setTimeout(() => {
+                    document.getElementById('gameOverScreen').style.display = 'flex';
+                }, 1500);
+            }
+
+            restartGame() {
+                document.getElementById('gameOverScreen').style.display = 'none';
+                
+                this.waves.forEach(wave => {
+                    if (wave.element.parentNode) {
+                        wave.element.parentNode.removeChild(wave.element);
+                    }
+                });
+                this.waves = [];
+                
+                this.startGame();
+            }
+        }
+
+        let game;
+
+        window.addEventListener('load', () => {
+            game = new PulseMaster();
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+    </script>
+</body>
+</html>
